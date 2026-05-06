@@ -30,8 +30,7 @@ int add(std::string input, int index, std::vector<Task>& list){
     std::cin >> status;
     std::cin.ignore(10000, '\n');
 
-    Task task{(size + 1), desc, rn, rn};
-    std::cout << task.id;
+    Task task{(size + 1), desc, status, rn, rn};
     list.push_back(task);
     return 0;
 }
@@ -50,6 +49,25 @@ void del(std::string input, int index, std::vector<Task>& list){
     }
 }
 
+void display(std::string input, int index, std::vector<Task>& list){
+    std::string status;
+
+    status = input.substr(index + 1);
+    if(!(status.empty())){
+        status.pop_back();
+        for(int i = 0; i < list.size(); i++){
+            if(status == list[i].status){
+                std::cout << (i + 1) << ". " << list[i].description << "\n";
+             }
+        }
+    }
+    else{
+        for(int i = 0; i < list.size(); i++){
+            std::cout << (i + 1) << ". " << list[i].description << "\n";
+        }
+    }
+}
+
 int main(){
 
     std::vector<Task> list;
@@ -57,7 +75,7 @@ int main(){
     std::string command;
     std::string input;
     int command_index;
-    std::string commands[] = {"add", "exit", "delete"};
+    std::string commands[] = {"add", "exit", "delete", "display"};
     int amt_of_commands = sizeof(commands)/sizeof(commands[0]);
     int index;
 
@@ -83,6 +101,9 @@ int main(){
             break;
             case 2:
             del(input, index, list);
+            break;
+            case 3:
+            display(input, index, list);
             break;
             default:
             std::cout << "Invalid Command\n";
