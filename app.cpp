@@ -1,5 +1,9 @@
 #include <iostream>
 #include <vector>
+#include <fstream>
+#include "json.hpp"
+
+using json = nlohmann::json;
 
 class Task{
 public:
@@ -10,7 +14,54 @@ public:
     std::string updatedAt;
 };
 
-int add(std::string input, int index, std::vector<Task>& list){
+
+void loader(std::vector<Task>& list){
+    std::ifstream file("taskList.json");
+    
+    if (!file.is_open()) {
+        return; 
+    }
+
+    json j_array;
+
+    if (file.peek() == std::ifstream::traits_type::eof()) {
+        return;
+    }
+
+    file >> j_array;
+    for (int i = 0; i < j_array.size(); i++) {
+        Task t;
+        t.id = j_array[i]["id"];
+        t.description = j_array[i]["description"];
+        t.status = j_array[i]["status"];
+        t.createdAt = j_array[i]["createdAt"];
+        t.updatedAt = j_array[i]["updatedAt"];
+        
+        list.push_back(t);
+    }
+    
+    file.close();
+}
+
+void saver(const std::vector<Task>& list) {
+    json j_array = json::array();
+
+    for (int i = 0; i < list.size(); i++) {
+        j_array.push_back({
+            {"id", list[i].id},
+            {"description", list[i].description},
+            {"status", list[i].status},
+            {"createdAt", list[i].createdAt},
+            {"updatedAt", list[i].updatedAt}
+        });
+    }
+
+    std::ofstream file("taskList.json");
+    file << j_array.dump(4);
+    file.close();
+}
+
+void add(std::string input, int index, std::vector<Task>& list){
     std::string desc;
     std::string status;
     std::string rn;
@@ -23,7 +74,7 @@ int add(std::string input, int index, std::vector<Task>& list){
     desc = input.substr(index + 1);
     if (desc.empty()){
         std::cout << "No task given";
-        return 0;
+        return;
     }
 
     std::cout << "There are 3 status : \n1.to-do \n2. in-progress \n3. done \n\nGive a status to your task \n>>>> ";
@@ -32,10 +83,14 @@ int add(std::string input, int index, std::vector<Task>& list){
 
     Task task{(size + 1), desc, status, rn, rn};
     list.push_back(task);
-    return 0;
 }
 
 void del(std::string input, int index, std::vector<Task>& list){
+    if(list.empty()){
+        std::cout << "Your list is empty.";
+        return;
+    }
+
     int id;
     int size = list.size();
 
@@ -50,6 +105,11 @@ void del(std::string input, int index, std::vector<Task>& list){
 }
 
 void display(std::string input, int index, std::vector<Task>& list){
+    if(list.empty()){
+        std::cout << "Your list is empty.";
+        return;
+    }
+
     std::string status;
 
     status = input.substr(index + 1);
@@ -63,19 +123,44 @@ void display(std::string input, int index, std::vector<Task>& list){
     }
     else{
         for(int i = 0; i < list.size(); i++){
-            std::cout << (i + 1) << ". " << list[i].description << "\n";
+            std::cout << (i + 1) << ". " << list[i].description << "( " << list[i].status << " )" << "\n";
+        }
+    }
+}
+
+void update(std::string input, int index, std::vector<Task>& list){
+    input = input.substr(index + 1);
+    index = input.find(" ");
+
+    time_t timestamp;
+    std::string rn;
+    int id;
+    std::string new_status;
+    
+    time(&timestamp);
+    rn = ctime(&timestamp);
+
+    id = std::stoi(input.substr(0, index));
+    new_status = input.substr(index + 1);
+
+    for(int i = 0; i < list.size(); i++){
+        if(id == list[i].id){
+            list[i].status = new_status;
+            list[i].updatedAt = rn;
         }
     }
 }
 
 int main(){
-
     std::vector<Task> list;
+
+    loader(list);
+
     bool running = true;
     std::string command;
     std::string input;
     int command_index;
-    std::string commands[] = {"add", "exit", "delete", "display"};
+    std::string commands[] = {"add", "exit", "delete", "display", "update"};
     int amt_of_commands = sizeof(commands)/sizeof(commands[0]);
     int index;
 
@@ -105,12 +190,16 @@ int main(){
             case 3:
             display(input, index, list);
             break;
+            case 4:
+            update(input, index, list);
+            break;
             default:
             std::cout << "Invalid Command\n";
         }
     }
 
     std::cout << "****************************";
+    saver(list);
 
     return 0;
 }
